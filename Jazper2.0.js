@@ -1,0 +1,33 @@
+function createJSONs() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Sheet1');
+  const values = sheet.getDataRange().getValues();
+  const headers = values.shift();
+
+  const folder = DriveApp.getFolderById('14ierIZ8iyDl_OlupIo4eK1ElFNYhD_nB'); // Replace 'your_folder_id_here' with the ID of your desired folder
+  
+  values.forEach((row, index) => {
+    const downloadLocations = row[6].split(',')
+      .map(url => url.trim().replace(/(\/)+(?=[hH][tT][tT][pP][sS]?:)/g, ''))
+      .filter(Boolean);
+    const downloadLocationsString = downloadLocations.length > 0 ? downloadLocations.join(', ') : '';
+
+    const data = {
+      id: row[0],
+      name: row[1],
+      crawl_date: row[2],
+      host: row[3],
+      actors: `[${row[4].split(',').map(actor => actor.trim()).join(',')}]`,
+      associations: `[${row[5].split(',').map(association => association.trim()).join(',')}]`,
+      download_locations: downloadLocationsString
+    };
+    
+    const json = JSON.stringify(data, null, 2)
+                   .replace(/\\u0026/g, '&')
+                   .replace(/\\n/g, '\n')
+                   .replace(/,\n\s+(?=[\{\[])/g, '');
+
+    const file = folder.createFile(`row_${index+1}.json`, json, 'application/json');
+
+    Logger.log(`File URL: ${file.getUrl()}`);
+  });
+}
